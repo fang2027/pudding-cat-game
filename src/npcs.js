@@ -7,7 +7,7 @@ export const characters = [
 ];
 export function nearestCharacter(p, list=characters){
  if(!p.grounded)return null;
- return list.filter(n=>Math.abs(p.x-n.x)<1.5).sort((a,b)=>Math.abs(p.x-a.x)-Math.abs(p.x-b.x))[0]??null;
+ return list.filter(n=>Math.abs(p.x-n.x)<1.5 && Math.abs((p.y??0)-(n.y??0))<.8).sort((a,b)=>Math.abs(p.x-a.x)-Math.abs(p.x-b.x))[0]??null;
 }
 export function setupNpcs(scene,getPlayer,pause,missionUi){
  const dialog=document.querySelector('#conversation'),prompt=document.querySelector('#interaction');

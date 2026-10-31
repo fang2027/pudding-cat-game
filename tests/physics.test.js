@@ -6,3 +6,8 @@ test('cannot walk through crate',()=>{const p=player();for(let i=0;i<300;i++)ste
 test('jump clears low crate and lands on it',()=>{const p=player();p.x=-7.05;step(p,0,false,1/120);let highest=0;for(let i=0;i<100;i++){step(p,i<35?1:0,i===0,1/120);highest=Math.max(highest,p.y);}assert.ok(highest>1.5);assert.equal(p.y,.7);});
 test('airborne input cannot double jump',()=>{const p=player();step(p,0,false,1/120);step(p,0,true,1/120);const v=p.vy;step(p,0,true,1/120);assert.ok(p.vy<v);});
 test('gap triggers fall reset signal',()=>{const p=player();p.x=1;let fallen=false;for(let i=0;i<150;i++)fallen=step(p,0,false,1/120)||fallen;assert.equal(fallen,true);});
+test('upper platforms allow jumping through and catch the descent',()=>{
+ const p={x:10.5,y:2,vy:0,grounded:true};let highest=0;
+ for(let i=0;i<160;i++){step(p,0,i===0,1/120);highest=Math.max(highest,p.y);}
+ assert.ok(highest>3.5);assert.ok(Math.abs(p.y-3.2)<.001);assert.equal(p.grounded,true);
+});

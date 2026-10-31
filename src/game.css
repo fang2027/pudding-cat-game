@@ -2,3 +2,5 @@
 #interaction{position:fixed;bottom:240px;left:50%;transform:translateX(-50%);z-index:2;box-shadow:0 3px 15px #0002}[hidden]{display:none!important}#missions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:0;list-style:none}#missions li{background:#eee8da;border-radius:12px;padding:10px;font-size:13px}dialog{max-width:480px;width:90%;border:0;border-radius:24px;padding:30px;color:#353047;background:#fffaf0}dialog::backdrop{background:#25223b99}dialog p{line-height:1.7}#task-name{padding:12px;background:#eee8da;border-radius:12px}
 
 #hud{margin:8px 5vw;padding:12px;background:#fffaf0;border-radius:14px;font-weight:600}#mission-action{margin:8px}#result{border-top:6px solid #e8a544}
+
+#props{display:flex;justify-content:center;gap:8px 24px;flex-wrap:wrap;list-style:none;padding:0 20px;margin:8px 0;color:#595074;font-size:14px}
