@@ -9,10 +9,11 @@ export function nearestCharacter(p, list=characters){
  if(!p.grounded)return null;
  return list.filter(n=>Math.abs(p.x-n.x)<1.5).sort((a,b)=>Math.abs(p.x-a.x)-Math.abs(p.x-b.x))[0]??null;
 }
-export function setupNpcs(scene,getPlayer,pause){
+export function setupNpcs(scene,getPlayer,pause,missionUi){
  const dialog=document.querySelector('#conversation'),prompt=document.querySelector('#interaction');
  let active=null;const visited=new Set();
- function refresh(){document.querySelector('#missions').replaceChildren(...characters.map(n=>{const card=document.createElement('li');card.textContent=`${n.name} · ${n.task}：待確認${visited.has(n.name)?' · 已交談':''}${n.file?'':' · 模型待提供'}`;return card;}));}
+ let previousCards="";
+ function refresh(){const signature=characters.map(n=>missionUi?.status(n)??"待確認").join()+[...visited].join();if(signature===previousCards)return;previousCards=signature;document.querySelector('#missions').replaceChildren(...characters.map(n=>{const card=document.createElement('li');card.textContent=`${n.name} · ${n.task}：${missionUi?.status(n)??"待確認"}${visited.has(n.name)?' · 已交談':''}${n.file?'':' · 模型待提供'}`;return card;}));}
  for(const n of characters){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
   const ctx=canvas.getContext('2d');ctx.fillStyle='#fff9e9';ctx.fillRect(0,0,512,128);ctx.fillStyle='#353047';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.fillText(n.name+(n.file?'':' · 預留位置'),256,76);
@@ -22,12 +23,12 @@ export function setupNpcs(scene,getPlayer,pause){
    const model=g.scene;model.updateMatrixWorld(true);let box=new THREE.Box3().setFromObject(model);model.scale.setScalar(1.8/box.getSize(new THREE.Vector3()).y);model.updateMatrixWorld(true);box=new THREE.Box3().setFromObject(model);const center=box.getCenter(new THREE.Vector3());model.position.set(n.x-center.x,-box.min.y,-.7-center.z);scene.add(model);
   },undefined,()=>{n.text='角色模型載入失敗，請重新整理。任務內容仍待確認。';label.material.color.set(0xffa080);});
  }
- function open(){if(dialog.open)return;active=nearestCharacter(getPlayer());if(!active)return;pause(true);document.querySelector('#speaker').textContent=active.name;document.querySelector('#speech').textContent=active.text;document.querySelector('#task-name').textContent=active.task+' · 內容、計時與計分待確認';visited.add(active.name);refresh();dialog.showModal();document.querySelector('#close-dialog').focus();}
+ function open(){if(dialog.open)return;active=nearestCharacter(getPlayer());if(!active)return;pause(true);document.querySelector('#speaker').textContent=active.name;document.querySelector('#speech').textContent=active.text;document.querySelector('#task-name').textContent=active.task+' · 內容、計時與計分待確認';const info=missionUi?.dialog(active);const action=document.querySelector('#mission-action');action.hidden=!info?.action;if(info){document.querySelector('#speech').textContent=info.text;document.querySelector('#task-name').textContent=info.task;action.textContent=info.label??'';action.onclick=()=>{const run=info.action;close();run();};}visited.add(active.name);refresh();dialog.showModal();document.querySelector('#close-dialog').focus();}
  function close(){pause(false);dialog.close();}
  document.querySelector('#close-dialog').onclick=close;
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  dialog.addEventListener('close',()=>{pause(false);active=null;});
  addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat){e.preventDefault();open();}});
  prompt.onclick=open;refresh();
- return ()=>{const n=nearestCharacter(getPlayer());prompt.hidden=!n||dialog.open;prompt.textContent=n?'按 E 與'+n.name+'互動':'';};
+ return ()=>{refresh();const n=nearestCharacter(getPlayer());prompt.hidden=!n||dialog.open;prompt.textContent=n?'按 E 與'+n.name+'互動':'';};
 }

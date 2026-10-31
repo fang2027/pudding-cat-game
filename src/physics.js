@@ -1,7 +1,7 @@
 export const blocks = [
  {x:-7,y:-.5,w:14,h:1}, {x:9,y:-.5,w:14,h:1},
  {x:-6,y:.35,w:1.3,h:.7}, {x:-2.7,y:.65,w:1.5,h:1.3},
- {x:5,y:.45,w:1.5,h:.9}, {x:8,y:1,w:1.6,h:2}
+ {x:5,y:.45,w:1.5,h:.9}, {x:8,y:1,w:1.6,h:2}, {x:10.8,y:.45,w:1.5,h:.9}
 ];
 export const player = () => ({x:-11,y:0,vy:0,grounded:false});
 const radius=.36, height=1.15;
