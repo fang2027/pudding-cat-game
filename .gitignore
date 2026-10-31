@@ -8,3 +8,6 @@ public/assets/videos/*.mp4
 
 # M1 runtime character, explicitly approved for GitHub sync
 !public/assets/characters/pudding-cat.glb
+
+!public/assets/characters/jiayin-baby.glb
+!public/assets/characters/jiayin-girl.glb
