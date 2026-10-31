@@ -23,7 +23,9 @@ export function setupNpcs(scene,getPlayer,pause){
   },undefined,()=>{n.text='角色模型載入失敗，請重新整理。任務內容仍待確認。';label.material.color.set(0xffa080);});
  }
  function open(){if(dialog.open)return;active=nearestCharacter(getPlayer());if(!active)return;pause(true);document.querySelector('#speaker').textContent=active.name;document.querySelector('#speech').textContent=active.text;document.querySelector('#task-name').textContent=active.task+' · 內容、計時與計分待確認';visited.add(active.name);refresh();dialog.showModal();document.querySelector('#close-dialog').focus();}
- document.querySelector('#close-dialog').onclick=()=>dialog.close();
+ function close(){pause(false);dialog.close();}
+ document.querySelector('#close-dialog').onclick=close;
+ dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  dialog.addEventListener('close',()=>{pause(false);active=null;});
  addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat){e.preventDefault();open();}});
  prompt.onclick=open;refresh();

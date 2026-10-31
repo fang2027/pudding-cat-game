@@ -16,7 +16,7 @@ for(const [i,b] of blocks.entries()){
 const star=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshStandardMaterial({color:0xffc63e,emissive:0xa65d00,emissiveIntensity:.3}));star.position.set(13,1.6,0);scene.add(star);
 const actor=new THREE.Group();scene.add(actor);let ready=false,p=player(),queuedJump=false,finished=false;
 const keys=new Set();let paused=false;
-const updateNpcs=setupNpcs(scene,()=>ready?p:{x:0,grounded:false},value=>{paused=value;keys.clear();queuedJump=false;});
+const updateNpcs=setupNpcs(scene,()=>ready?p:{x:0,grounded:false},value=>{if(paused===value)return;paused=value;keys.clear();queuedJump=false;});
 function reset(){p=player();queuedJump=false;finished=false;status.textContent=ready?'自由探索：靠近角色或標示牌，按 E 交談。':'正在準備布丁貓…';}
 document.querySelector('#reset').onclick=reset;
 addEventListener('keydown',e=>{if(paused)return;if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Space'&&!e.repeat)queuedJump=true;if(e.code==='KeyR')reset();});
