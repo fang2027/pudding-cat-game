@@ -61,4 +61,3 @@ blender --background /path/to/pudding_cat.blend --python scripts/audit_blend.py 
 此專案使用 Node.js 24 LTS（見 `.nvmrc`）。在 GitHub 連接此儲存庫後，可在 Codex 雲端選擇它並執行 `npm ci`，再使用 `npm run build` 驗證。瀏覽器預覽可執行 `npm run dev -- --host 0.0.0.0`，並使用環境提供的預覽網址。
 
 角色原始素材和匯出檔應保留在使用者指定的位置；未經明確要求，不上傳至 GitHub 或其他服務。
-

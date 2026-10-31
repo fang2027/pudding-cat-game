@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+*.audit.json
+source_assets/
+public/assets/characters/*.glb
+public/assets/videos/*.mp4
