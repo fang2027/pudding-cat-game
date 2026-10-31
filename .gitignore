@@ -5,3 +5,6 @@ dist/
 source_assets/
 public/assets/characters/*.glb
 public/assets/videos/*.mp4
+
+# M1 runtime character, explicitly approved for GitHub sync
+!public/assets/characters/pudding-cat.glb

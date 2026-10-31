@@ -1,3 +1,21 @@
+# M1 操作測試（目前版本）
+
+在此目錄執行 `npm ci`、`npm run dev` 後開啟終端顯示的網址。
+首頁為 M1 測試舞台；`/viewer.html` 保留 M0 素材檢視器。
+
+方向鍵或 A/D 左右移動，空白鍵跳躍，R 或畫面按鈕返回起點。掉落會自動重置。
+採固定斜側視角並水平跟隨角色，模型整體移動；尚未製作骨架走路動畫。
+自由練習不計時、不扣生命，正式失誤規則仍待確認。
+使用者已接受三個角色目前的材質呈現，缺少圖片不再列為阻礙。
+
+驗證：`node tests/physics.test.js`（5 項）與 `npm run build`。
+可調參數位於 `src/physics.js`（平台、速度、跳躍與重力）。
+角色 GLB 放在 `public/assets/characters/pudding-cat.glb`，打包交付時需包含此檔。
+
+---
+
+以下為原 M0 起始文件，狀態以本節和 M0 檢查報告為準。
+
 # 布丁貓的失控舞台 — 素材檢查起始專案
 
 這是 **M0 開發起點**，不是已完成的遊戲。尚未提供或匯入任何真實佳音角色素材。
@@ -55,6 +73,7 @@ blender --background /path/to/pudding_cat.blend --python scripts/audit_blend.py 
 ## 給 Codex 的下一句指令
 
 > 請先閱讀 AGENTS.md、GDD.md、PLAN.md 和 README.md。現在只執行 M0。檢查我提供的布丁貓 .blend 和外部貼圖，執行唯讀素材稽核，整理真實骨架與 Shape Key 名稱，提出不破壞原始檔的 GLB 匯出方案。先不要開發三個 NPC 任務、設計不存在的骨頭名稱或更動原始素材。完成後列出已驗證項目、仍有問題與下一步。
+
 
 ## Codex 雲端與 GitHub
 
