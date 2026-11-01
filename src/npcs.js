@@ -3,7 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 export const characters = [
  {name:'佳音寶寶',x:-12,file:'jiayin-baby.glb',task:'舞台道具任務',text:'歡迎來到舞台！我們先認識一下，之後再一起準備演出。'},
  {name:'佳音女寶寶',x:-8.5,file:'jiayin-girl.glb',task:'燈光任務',text:'嗨，布丁貓！先自由逛逛吧，燈光任務還在準備中。'},
- {name:'法蘭奇',x:-.8,task:'音響任務',text:'這裡預留給法蘭奇。角色模型尚未提供，任務內容也待確認。'}
+ {name:'法蘭奇',x:-.8,task:'音響任務',text:'這裡預留給法蘭奇。角色模型尚未提供，可在此接受音響試玩任務。'}
 ];
 export function nearestCharacter(p, list=characters){
  if(!p.grounded)return null;

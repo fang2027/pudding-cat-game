@@ -3,9 +3,10 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {blocks,player,step} from './physics.js';
 import './game.css';
 import {setupNpcs} from './npcs.js';
-import {Mission,RULES,PROPS} from './mission.js';
+import {Mission,RULES,PROPS,TASKS} from './mission.js';
 import {missionUi,missionStatus} from './mission-ui.js';
 import {setupLightStage} from './light-stage.js';
+import {setupAudioStage} from './audio-stage.js';
 const host=document.querySelector('#game'),status=document.querySelector('#status');
 const scene=new THREE.Scene();scene.background=new THREE.Color('#f9f0dc');
 const camera=new THREE.PerspectiveCamera(36,1,.1,120);
@@ -41,20 +42,30 @@ const actor=new THREE.Group();scene.add(actor);let ready=false,p=player(),queued
 const keys=new Set();let paused=false;
 const mission=new Mission();
 const updateLights=setupLightStage(scene);
+const updateAudioStage=setupAudioStage(scene);
 const watchingDemo=()=>mission.activeId==='lights'&&mission.lights.stage==='demo';
 const result=document.querySelector('#result');
+const ended=()=>['gameover','won'].includes(mission.phase);
 function clearInput(){keys.clear();queuedJump=false;}
 function respawn(){p=player();clearInput();}
-function showResult(outcome){if(!outcome)return;clearInput();document.querySelector('#result-title').textContent=outcome.title;document.querySelector('#result-text').textContent=outcome.text;document.querySelector('#result-close').hidden=mission.phase==='gameover';document.querySelector('#restart-game').hidden=mission.phase!=='gameover';result.showModal();}
+function showResult(outcome){
+ if(!outcome)return;clearInput();
+ document.querySelector('#result-title').textContent=outcome.title;
+ document.querySelector('#result-text').textContent=outcome.text;
+ const scores=document.querySelector('#result-scores');scores.hidden=!ended();
+ scores.replaceChildren(...Object.entries(TASKS).map(([id,task])=>{const li=document.createElement('li');const r=mission.records[id];li.textContent=`${task.name}：${r.state==='complete'?r.score+' 分':'未完成'}`;return li;}));
+ document.querySelector('#result-close').hidden=ended();document.querySelector('#restart-game').hidden=!ended();
+ result.showModal();
+}
 document.querySelector('#result-close').onclick=()=>result.close();
 result.addEventListener('close',clearInput);
-result.addEventListener('cancel',e=>{if(mission.phase==='gameover')e.preventDefault();});
+result.addEventListener('cancel',e=>{if(ended())e.preventDefault();});
 document.querySelector('#restart-game').onclick=()=>{mission.restart();respawn();result.close();};
-function reset(){if(!ready)return;if(mission.phase==='gameover'){showResult({title:'本場結束',text:'請重新開始。'});return;}if(mission.phase==='active'){showResult(mission.fail('返回起點：本次任務失敗'));}respawn();}
-const updateNpcs=setupNpcs(scene,()=>ready&&!result.open&&mission.phase!=='gameover'?p:{x:0,grounded:false},value=>{if(paused===value)return;paused=value;clearInput();},missionUi(mission,()=>p,showResult,clearInput));
+function reset(){if(!ready)return;if(ended())return;if(mission.phase==='active'){showResult(mission.fail('返回起點：本次任務失敗'));}respawn();}
+const updateNpcs=setupNpcs(scene,()=>ready&&!result.open&&!ended()?p:{x:0,grounded:false},value=>{if(paused===value)return;paused=value;clearInput();},missionUi(mission,()=>p,showResult,clearInput));
 document.querySelector('#reset').onclick=reset;
 addEventListener('keydown',e=>{
- if(paused||result.open||mission.phase==='gameover')return;
+ if(paused||result.open||ended())return;
  if(['ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
  if(e.code==='KeyR'&&!e.repeat){reset();return;}
  if(watchingDemo())return;
@@ -72,15 +83,15 @@ let previous=performance.now(),accumulator=0;
 function frame(now){requestAnimationFrame(frame);const wallDelta=(now-previous)/1000;accumulator+=Math.min(wallDelta,.05);previous=now;
  if(ready&&!paused&&!result.open&&!document.hidden){const wasDemo=watchingDemo();const outcome=mission.tick(wallDelta);if(wasDemo&&!watchingDemo())clearInput();if(outcome){respawn();showResult(outcome);}}
  while(accumulator>=1/120){
-  if(ready&&!paused&&!result.open&&!document.hidden&&mission.phase!=='gameover'&&!watchingDemo()){const dir=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||keys.has('KeyA'));if(step(p,dir,queuedJump,1/120)){showResult(mission.fail('掉下舞台了'));respawn();}mission.collect(p);const padResult=mission.touchPad(p);if(padResult){if(padResult.kind!=='success')respawn();showResult(padResult);}queuedJump=false;if(dir)actor.rotation.y=dir>0?Math.PI/2:-Math.PI/2;}
+  if(ready&&!paused&&!result.open&&!document.hidden&&!ended()&&!watchingDemo()){const dir=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||keys.has('KeyA'));if(step(p,dir,queuedJump,1/120)){showResult(mission.fail('掉下舞台了'));respawn();}mission.collect(p);const padResult=mission.touchPad(p)??mission.updateAudio(p);if(padResult){if(['failure','gameover'].includes(padResult.kind))respawn();showResult(padResult);}queuedJump=false;if(dir)actor.rotation.y=dir>0?Math.PI/2:-Math.PI/2;}
   accumulator-=1/120;
  }
- actor.position.set(p.x,p.y,0);updateNpcs();updateLights(mission);
+ actor.position.set(p.x,p.y,0);updateNpcs();updateLights(mission);updateAudioStage(mission);
  const focus=watchingDemo()?-6:THREE.MathUtils.clamp(p.x,-9,10),focusY=watchingDemo()?1.7:1.7+Math.max(0,p.y)*.55;camera.position.set(focus+4,focusY+5.5,14);camera.lookAt(focus,focusY,0);
  if(ready){
  status.textContent=missionStatus(mission);
- const timing=mission.activeId?`${mission.activeId==='props'?'道具':'燈光'} ${Math.ceil(mission.remaining)} 秒`:'不計時';
- document.querySelector('#hud').textContent=`剩餘失誤機會 ${mission.lives} / ${RULES.lives} ｜ ${timing} ｜ 道具任務 ${mission.records.props.score} 分 · 燈光任務 ${mission.records.lights.score} 分`;
+ const timing=mission.activeId?`${TASKS[mission.activeId].name} ${Math.ceil(mission.remaining)} 秒`:'不計時';
+ document.querySelector('#hud').textContent=`剩餘失誤機會 ${mission.lives} / ${RULES.lives} ｜ ${timing} ｜ 道具任務 ${mission.records.props.score} 分 · 燈光任務 ${mission.records.lights.score} 分 · 音響任務 ${mission.records.audio.score} 分`;
 
  }
  propMeshes.forEach((mesh,i)=>{mesh.visible=mission.activeId==='props'&&!mission.collected.has(PROPS[i].id);mesh.rotation.y+=.012;propItems[i].textContent=`${mission.collected.has(PROPS[i].id)?'✓':'○'} ${PROPS[i].name} · ${PROPS[i].place}`;});
