@@ -1,5 +1,5 @@
 import {LightSequence,LIGHT_RULES} from './lights.js';
-import {AudioMission,AUDIO_RULES} from './audio-mission.js';
+import {AudioMission,AUDIO_RULES,CONSOLE} from './audio-mission.js';
 export const RULES = Object.freeze({seconds:60,lives:3,baseScore:500,perSecond:10});
 export const TASKS=Object.freeze({props:{name:'道具任務',seconds:RULES.seconds},lights:{name:'燈光任務',seconds:LIGHT_RULES.seconds},audio:{name:'音響任務',seconds:AUDIO_RULES.seconds}});
 export const PROPS = Object.freeze([
@@ -53,11 +53,12 @@ export class Mission {
  updateAudio(p){
   if(this.activeId!=='audio')return null;
   if(this.audio.hit(p))return this.fail('被音波嚇到了！');
-  this.audio.collect(p);return null;
+  return null;
  }
+ takeRemote(p){return this.activeId==='audio'&&!this.audio.hit(p)&&this.audio.collect(p);}
  finishAudio(p){
-  if(this.activeId!=='audio'||!this.audio.carrying||!p.grounded||Math.abs(p.x+.8)>=1.5||Math.abs(p.y)>.8)return null;
-  return this.save('遙控器送達，音響恢復了！');
+  if(this.activeId!=='audio'||!this.audio.carrying||!p.grounded||Math.abs(p.x-CONSOLE.x)>=1.5||Math.abs(p.y-CONSOLE.y)>.8)return null;
+  return this.save('遙控器送回音控台，音響恢復了！');
  }
  save(title){
   if(!this.activeId)return null;
@@ -71,7 +72,7 @@ export class Mission {
   this.lives--;const failed=this.activeId;
   if(failed){this.records[failed].state='idle';if(failed==='props')this.collected.clear();else if(failed==='lights')this.lights.reset();else this.audio.reset();}
   this.activeId=null;
-  const hint=failed==='props'?'道具已回到原位，可找佳音寶寶重試。':failed==='lights'?'可找佳音女寶寶重新觀看順序並重試。':failed==='audio'?'遙控器已回到原位，可找法蘭奇重試。':'可以繼續探索。';
+  const hint=failed==='props'?'道具已回到原位，可找佳音寶寶重試。':failed==='lights'?'可找佳音女寶寶重新觀看順序並重試。':failed==='audio'?'法蘭奇和遙控器已回到音控台，可回音控台重試。':'可以繼續探索。';
   return {kind:this.lives===0?'gameover':'failure',title:this.lives===0?'本場結束':reason,text:this.lives===0?'失誤機會已耗盡。重新開始會重置三項任務及本場分數。':`剩餘 ${this.lives} 次失誤機會。${hint}已完成的任務分數仍保留。`};
  }
 }

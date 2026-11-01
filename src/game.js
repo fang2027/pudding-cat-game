@@ -62,6 +62,15 @@ result.addEventListener('close',clearInput);
 result.addEventListener('cancel',e=>{if(ended())e.preventDefault();});
 document.querySelector('#restart-game').onclick=()=>{mission.restart();respawn();result.close();};
 function reset(){if(!ready)return;if(ended())return;if(mission.phase==='active'){showResult(mission.fail('返回起點：本次任務失敗'));}respawn();}
+const remotePrompt=document.querySelector('#remote-interaction');
+function takeRemote(){if(ready&&!paused&&!result.open&&!document.hidden&&!ended())mission.takeRemote(p);}
+remotePrompt.onclick=takeRemote;
+// Handle pickup before the NPC listener, so a single E has a single purpose.
+addEventListener('keydown',e=>{
+ if(e.code==='KeyE'&&!e.repeat&&ready&&!paused&&!result.open&&!ended()&&mission.activeId==='audio'&&mission.audio.canCollect(p)){
+  e.preventDefault();takeRemote();
+ }
+});
 const updateNpcs=setupNpcs(scene,()=>ready&&!result.open&&!ended()?p:{x:0,grounded:false},value=>{if(paused===value)return;paused=value;clearInput();},missionUi(mission,()=>p,showResult,clearInput));
 document.querySelector('#reset').onclick=reset;
 addEventListener('keydown',e=>{
@@ -86,7 +95,8 @@ function frame(now){requestAnimationFrame(frame);const wallDelta=(now-previous)/
   if(ready&&!paused&&!result.open&&!document.hidden&&!ended()&&!watchingDemo()){const dir=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||keys.has('KeyA'));if(step(p,dir,queuedJump,1/120)){showResult(mission.fail('掉下舞台了'));respawn();}mission.collect(p);const padResult=mission.touchPad(p)??mission.updateAudio(p);if(padResult){if(['failure','gameover'].includes(padResult.kind))respawn();showResult(padResult);}queuedJump=false;if(dir)actor.rotation.y=dir>0?Math.PI/2:-Math.PI/2;}
   accumulator-=1/120;
  }
- actor.position.set(p.x,p.y,0);updateNpcs();updateLights(mission);updateAudioStage(mission);
+ actor.position.set(p.x,p.y,0);updateNpcs();updateLights(mission);updateAudioStage(mission,p);
+ remotePrompt.hidden=!(ready&&!paused&&!result.open&&!ended()&&mission.activeId==='audio'&&mission.audio.canCollect(p));
  const focus=watchingDemo()?-6:THREE.MathUtils.clamp(p.x,-9,10),focusY=watchingDemo()?1.7:1.7+Math.max(0,p.y)*.55;camera.position.set(focus+4,focusY+5.5,14);camera.lookAt(focus,focusY,0);
  if(ready){
  status.textContent=missionStatus(mission);
