@@ -11,3 +11,6 @@ public/assets/videos/*.mp4
 
 !public/assets/characters/jiayin-baby.glb
 !public/assets/characters/jiayin-girl.glb
+
+# Extracted Frankie runtime asset; source Blender files remain local.
+!public/assets/characters/frankie.glb

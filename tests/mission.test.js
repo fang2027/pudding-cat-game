@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Mission,RULES,PROPS} from '../src/mission.js';
 import {player,step} from '../src/physics.js';
 const npc={x:-12,y:0,grounded:true};
-const atProp=prop=>({x:prop.x,y:prop.y-.65,grounded:true});
+const atProp=prop=>({x:prop.x,y:prop.y-.65,z:prop.z,grounded:true});
 test('exploration is untimed; accepting starts a fresh timer only once',()=>{
  const m=new Mission();m.tick(100);assert.equal(m.remaining,RULES.seconds);assert.equal(m.collect(atProp(PROPS[0])),false);
  assert.equal(m.start(),true);m.tick(2);assert.equal(m.start(),false);assert.equal(m.remaining,RULES.seconds-2);
@@ -21,9 +21,10 @@ test('all three distinct props must be returned before a single score is awarded
  assert.equal(m.finish(npc),null);assert.equal(m.start(),false);m.tick(100);assert.equal(m.score,920);
  m.fail('fall');assert.equal(m.score,920);assert.equal(m.phase,'complete');
 });
-test('upper floor props cannot be collected from the floor below',()=>{
+test('props require the correct height and depth',()=>{
  const m=new Mission();m.start();
- for(const prop of PROPS.slice(1))assert.equal(m.collect({x:prop.x,y:0}),false);
+ assert.equal(m.collect({...atProp(PROPS[1]),y:0}),false);
+ assert.equal(m.collect({...atProp(PROPS[2]),z:0}),false);
  assert.equal(m.collected.size,0);
 });
 test('failure clears every pickup, restores the route, and uses shared lives',()=>{
@@ -37,24 +38,23 @@ test('failure clears every pickup, restores the route, and uses shared lives',()
 });
 test('physical route reaches both floors, collects all three, and returns in time',()=>{
  const p=player(),m=new Mission();m.start();let elapsed=0;
- function moveTo(x,jump=false,height){
+ function moveTo(target,jump=false,height,axis='x'){
   for(let i=0;i<600;i++){
-   const dir=Math.abs(x-p.x)<.025?0:Math.sign(x-p.x);
-   assert.equal(step(p,dir,jump&&i===0,1/120),false,`fell heading to ${x}`);
+   const dir=Math.abs(target-p[axis])<.025?0:Math.sign(target-p[axis]);
+   assert.equal(step(p,axis==='x'?dir:0,jump&&i===0,1/120,axis==='z'?dir:0),false,`fell heading to ${target}`);
    assert.equal(m.tick(1/120),null,'time ran out');m.collect(p);elapsed+=1/120;
-   if(Math.abs(x-p.x)<.025&&p.grounded){
-    if(height!==undefined)assert.ok(Math.abs(p.y-height)<.01,`expected height ${height} at ${x}, got ${p.y}`);
+   if(Math.abs(target-p[axis])<.025&&p.grounded){
+    if(height!==undefined)assert.ok(Math.abs(p.y-height)<.01,`expected height ${height} at ${target}, got ${p.y}`);
     return;
    }
   }
-  assert.fail(`cannot reach ${x}; stopped at ${p.x}, ${p.y}`);
+  assert.fail(`cannot reach ${target}; stopped at ${p.x}, ${p.y}`);
  }
- moveTo(-7.05);moveTo(-5.5,true);moveTo(-2.7,true);moveTo(-.1);moveTo(2.9,true);
- moveTo(3.85);moveTo(5.6,true);moveTo(8,true,2);moveTo(13);
- assert.equal(m.collected.size,1);assert.equal(m.allCollected,false);
- moveTo(11.95);moveTo(10.3,true,.9);moveTo(8,true,2);
- moveTo(10.5,true,3.2);moveTo(8,true,4.4);assert.equal(m.collected.size,2);
- moveTo(5.3);moveTo(2.8,true,4.4);moveTo(2);moveTo(-1,true,4.4);moveTo(-1.9);moveTo(-5,true,4.4);
- assert.equal(m.allCollected,true);moveTo(-12);
+ const x=moveTo,z=(target,jump,height)=>moveTo(target,jump,height,'z');
+ z(-6);x(-5);assert.equal(m.collected.size,1);
+ z(-8);x(7.05);z(-6,true,.9);x(6.55);x(4.1,true,2);
+ x(4.75);x(7.05,true,3.2);x(7.85);x(10,true,4.4);x(12.75);assert.equal(m.collected.size,2);
+ z(-8);x(13);z(0);assert.equal(m.allCollected,true);
+ z(-8);x(0);x(-12);z(0);
  assert.equal(m.finish(p).kind,'success');assert.ok(elapsed<RULES.seconds);assert.equal(m.lives,3);
 });
