@@ -55,6 +55,6 @@ test('physical route reaches both floors, collects all three, and returns in tim
  z(-8);x(7.05);z(-6,true,.9);x(6.55);x(4.1,true,2);
  x(4.75);x(7.05,true,3.2);x(7.85);x(10,true,4.4);x(12.75);assert.equal(m.collected.size,2);
  z(-8);x(13);z(0);assert.equal(m.allCollected,true);
- z(-8);x(0);x(-12);z(0);
+ z(-8);x(0);x(-11);z(0);
  assert.equal(m.finish(p).kind,'success');assert.ok(elapsed<RULES.seconds);assert.equal(m.lives,3);
 });

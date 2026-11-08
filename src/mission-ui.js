@@ -7,7 +7,7 @@ export function missionStatus(m){
  if(m.phase==='gameover')return '這次彩排先休息一下，重新開始再一起準備吧。';
  if(m.phase==='won')return `準備完成，好戲開場！總分 ${m.score} 分。`;
  if(m.phase==='ready-to-open')return '舞台準備好了！音控台左邊的星星亮了，可以先去看看。想結算時，回一樓左側找佳音寶寶確認開演。';
- if(m.activeId==='props')return m.allCollected?'3 個道具已集齊！返回佳音寶寶身旁，按 E 交還。':'尋找 3 個道具：右側側台、左後台與二樓燈架工作走道。';
+ if(m.activeId==='props')return m.allCollected?'3 個道具已集齊！返回佳音寶寶身旁，按 E 交還。':'找齊 3 件道具。';
  if(m.activeId==='lights')return lightObjective(m.lights);
  if(m.activeId==='audio')return audioObjective(m.audio);
  return '開演準備中：找夥伴聽聽哪裡需要幫忙。先幫誰都可以，探索不計時。';
@@ -39,7 +39,7 @@ export function missionUi(m,getPlayer,onResult,onStart){
    if(m.activeId===id){
     if(id==='audio')return {text:missionStatus(m),task:`剩餘 ${Math.ceil(m.remaining)} 秒 · 對話暫停音波與計時`,label:'交還遙控器',action:m.audio.carrying?()=>onResult(m.finishAudio(getPlayer())):undefined};
     if(id==='lights')return {text:missionStatus(m),task:`剩餘 ${Math.ceil(m.remaining)} 秒 · 本回合 ${m.lights.progress} / ${m.lights.sequence.length} · 對話暫停計時、示範與換回合`};
-    return {text:m.allCollected?'3 個道具都找到了！一起交給我吧。':`目前找到 ${m.collected.size} / 3 個。尚缺：${PROPS.filter(item=>!m.collected.has(item.id)).map(item=>item.name+'（'+item.place+'）').join('、')}`,task:`剩餘 ${Math.ceil(m.remaining)} 秒 · 對話期間暫停計時`,label:'交還全部 3 個道具',action:m.allCollected?()=>onResult(m.finish(getPlayer())):undefined};
+    return {text:m.allCollected?'3 個道具都找到了！一起交給我吧。':`目前找到 ${m.collected.size} / 3 個。尚缺：${PROPS.filter(item=>!m.collected.has(item.id)).map(item=>item.name).join('、')}`,task:`剩餘 ${Math.ceil(m.remaining)} 秒 · 對話期間暫停計時`,label:'交還全部 3 個道具',action:m.allCollected?()=>onResult(m.finish(getPlayer())):undefined};
    }
    const seconds=TASKS[id].seconds;
    const goal={props:'找齊 3 件道具並交還',lights:'3 回合，記住亮燈順序再踩踏板',audio:'攔住法蘭奇 3 次，追回遙控器'}[id];

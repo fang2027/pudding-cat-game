@@ -1,13 +1,28 @@
 import {BACKSTAGE_Z,blockId,depthDistance,layoutPoint} from './layout.js';
 // Trial timing; fixed cycles keep every attack predictable and avoid random traps.
 export const AUDIO_RULES=Object.freeze({seconds:50,cycle:4.8,safe:2.4,warning:1.2});
+const SPEAKER_HIT_MARGIN=.36;
+const SOUND_FIELD_WIDTH=.9,SOUND_FIELD_DEPTH=4;
+export const SOUND_FIELD_ANGLE=1.03;
+export const SPEAKER_MOUTH_OFFSET=1.17;
 export const CONSOLE=Object.freeze(layoutPoint('console',{x:10.5,y:0},blockId(1)));
 export const CHASE=Object.freeze({speed:4.6,reaction:1.2,feedback:3,escapeSpeed:6.1});
+export const WAVE_INTRO_SECONDS=3;
+export const WAVE_COUNTDOWN_SECONDS=3;
 const route=points=>Object.freeze(points.map(([x,y,index,z=BACKSTAGE_Z])=>Object.freeze(index===undefined?CONSOLE:layoutPoint(blockId(index),{x,y,z}))));
 export const SPEAKERS=Object.freeze([
- Object.freeze({name:'左側喇叭',x:3.1,y:0,z:BACKSTAGE_Z,width:.9,depth:4,offset:0}),
- Object.freeze({name:'右側喇叭',x:12.6,y:0,z:BACKSTAGE_Z,width:1.1,depth:2.4,offset:1.6})
-].map((speaker,index)=>Object.freeze(layoutPoint('speaker-'+index,speaker,blockId(12)))));
+ Object.freeze({name:'左側喇叭',x:3.1,y:0,z:BACKSTAGE_Z,offset:0}),
+ Object.freeze({name:'右側喇叭',x:12.6,y:0,z:BACKSTAGE_Z,offset:1.6})
+].map((speaker,index)=>{
+ const s=layoutPoint('speaker-'+index,speaker,blockId(12));
+ return Object.freeze({...s,fieldZ:s.z-SPEAKER_MOUTH_OFFSET,
+  fieldWidth:(SOUND_FIELD_WIDTH/2+SPEAKER_HIT_MARGIN)/Math.sin(SOUND_FIELD_ANGLE),
+  fieldDepth:SOUND_FIELD_DEPTH/2+SPEAKER_HIT_MARGIN+SPEAKER_MOUTH_OFFSET});
+}));
+export function insideSoundField(p,s){
+ const x=(p.x-s.x)/s.fieldWidth,z=((p.z??0)-s.fieldZ)/s.fieldDepth;
+ return x*x+z*z<1&&Math.abs(Math.atan2(x,z))<=SOUND_FIELD_ANGLE;
+}
 const [floor]=route([[0,0,12]]);
 const firstStop=Object.freeze({...floor,x:SPEAKERS[0].x-2.1});
 const [low,high,right,stair,catwalk,rightStop]=route([[5,.9,4],[8,2,5],[10.8,.9,6],[10.5,3.2,7],[6.8,4.4,8],[14.5,0,12]]);
@@ -29,14 +44,14 @@ export const CHASE_STAGES=Object.freeze([
  ])})
 ]);
 const leftSpeaker=SPEAKERS[0];
-export const LEFT_BLAST_START=(leftSpeaker.x+leftSpeaker.width/2+.36-firstStop.x)/CHASE.escapeSpeed;
+export const LEFT_BLAST_START=(leftSpeaker.x+SOUND_FIELD_WIDTH/2+SPEAKER_HIT_MARGIN-firstStop.x)/CHASE.escapeSpeed;
 const phaseOffset=speaker=>speaker===leftSpeaker?AUDIO_RULES.safe+AUDIO_RULES.warning-LEFT_BLAST_START:speaker.offset;
 export const REMOTE=Object.freeze({...catwalk,y:catwalk.y+.65});
 export class AudioMission {
  constructor(){this.reset();}
  reset(){
   this.elapsed=0;this.carrying=false;this.stage=0;this.legElapsed=0;this.reactionRemaining=0;
-  this.speakersActive=false;this.waveElapsed=0;this.feedback='';this.feedbackRemaining=0;
+  this.speakersActive=false;this.waveElapsed=0;this.feedback='';this.feedbackRemaining=0;this.readyRemaining=0;
  }
  get target(){return CHASE_STAGES[this.stage].path.at(-1);}
  get routeLength(){
@@ -60,7 +75,14 @@ export class AudioMission {
  get frankieY(){return this.position.y;}
  get interactionLabel(){return this.stage<2?`按 E 攔住法蘭奇（第 ${this.stage+1} 次）`:'按 E 拿回遙控器';}
  tick(dt){
-  dt=Math.max(0,dt);this.elapsed+=dt;
+  dt=Math.max(0,dt);
+  if(this.readyRemaining>0){
+   const readyTime=Math.min(dt,this.readyRemaining);
+   this.readyRemaining=Math.max(0,this.readyRemaining-readyTime);
+   if(this.readyRemaining<1e-9){this.readyRemaining=0;this.speakersActive=true;}
+   dt-=readyTime;
+  }
+  this.elapsed+=dt;
   if(this.speakersActive)this.waveElapsed+=dt;
   this.feedbackRemaining=Math.max(0,this.feedbackRemaining-dt);
   if(this.feedbackRemaining===0)this.feedback='';
@@ -79,15 +101,15 @@ export class AudioMission {
   const end=this.phase(speaker)==='safe'?AUDIO_RULES.safe:this.phase(speaker)==='warning'?AUDIO_RULES.safe+AUDIO_RULES.warning:AUDIO_RULES.cycle;
   return Math.max(0,end-time);
  }
- hit(p){return SPEAKERS.some(s=>this.phase(s)==='blast'&&depthDistance(p,s)<s.depth/2+.36&&Math.abs(p.x-s.x)<s.width/2+.36&&p.y<s.y+.75&&p.y+1.15>s.y);}
- canInteract(p){return !this.carrying&&this.waiting&&p.grounded&&depthDistance(p,this.target)<.85&&Math.abs(p.x-this.target.x)<.85&&Math.abs(p.y-this.target.y)<.35;}
+ hit(p){return SPEAKERS.some(s=>this.phase(s)==='blast'&&insideSoundField(p,s)&&p.y<s.y+.75&&p.y+1.15>s.y);}
+ canInteract(p){return this.readyRemaining===0&&!this.carrying&&this.waiting&&p.grounded&&depthDistance(p,this.target)<.85&&Math.abs(p.x-this.target.x)<.85&&Math.abs(p.y-this.target.y)<.35;}
  canCollect(p){return this.atEnd&&this.canInteract(p);}
  interact(p){
   if(!this.canInteract(p))return null;
   if(this.stage===2){this.collect(p);return 'collected';}
-  this.feedback=this.stage===0?'差一點就拿到了！左側喇叭啟動了！等綠燈或跳過音波，沿箱子往右追！':'又被他溜走了！法蘭奇跳上二樓，從後台的箱子和紫色踏階追上去！';
+  this.feedback=this.stage===0?'等等會有聲波！先等音場恢復青綠色，或跳過聲波！':'又被他溜走了！繼續追！';
   this.feedbackRemaining=CHASE.feedback;
-  if(!this.speakersActive){this.speakersActive=true;this.waveElapsed=0;}
+  if(this.stage===0)this.readyRemaining=WAVE_INTRO_SECONDS+WAVE_COUNTDOWN_SECONDS;
   this.stage++;this.legElapsed=0;this.reactionRemaining=this.stage===1?0:CHASE.reaction;
   return 'escaped';
  }
@@ -98,6 +120,5 @@ export class AudioMission {
 }
 export function audioObjective(a){
  if(a.carrying)return '✓ 三次追逐完成！遙控器已取得 · 回音控台按 E 交還';
- const stage=CHASE_STAGES[a.stage];
- return `追逐 ${a.stage+1} / 3 · ${stage.place} · ${a.waiting?'靠近、落地後'+a.interactionLabel:'追上法蘭奇！'+(a.stage===2?'從後台箱子與紫色踏階上二樓':'走右側側台進後台')}`;
+ return `追逐 ${a.stage+1} / 3 ・ ${a.waiting?'靠近、落地後'+a.interactionLabel:'追上法蘭奇！'}`;
 }

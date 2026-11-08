@@ -1,9 +1,13 @@
-<!doctype html><html lang="zh-Hant"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>布丁貓的失控舞台</title><body><header><small>PUDDING CAT · 開演前大危機</small><h1>布丁貓的失控舞台</h1><p>觀眾已經進場，舞台卻還沒準備好！和夥伴一起完成開演前的三件事。</p></header><div id="game-hud"><p id="preparations" aria-live="polite">開演準備 · 0 / 3</p><p id="hud" role="status"></p><ul id="props" aria-label="道具收集進度"></ul><section id="light-panel" hidden aria-label="燈光任務"><div id="light-rounds" aria-label="燈光三回合進度"></div><b id="light-hint"></b><div class="light-cards"></div></section><section id="audio-panel" hidden aria-label="法蘭奇，遙控器還來！"><div id="chase-progress" aria-label="三段追逐進度"></div><b id="audio-objective"></b><p id="chase-feedback" role="status" hidden></p><div id="speaker-states"></div></section></div><section id="layout-editor" hidden aria-labelledby="layout-heading">
+<!doctype html><html lang="zh-Hant"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>布丁貓的失控舞台</title><body><header><small>PUDDING CAT · 開演前大危機</small><h1>布丁貓的失控舞台</h1><p>觀眾已經進場，舞台卻還沒準備好！和夥伴一起完成開演前的三件事。</p></header><div id="game-hud"><div id="dashboard">
+ <div class="hud-row"><strong>開演準備</strong><span id="preparations"></span><ul id="hud-missions" aria-label="任務進度"></ul></div>
+ <div id="hud" class="hud-row"><span id="hud-hearts" role="img"></span><strong id="hud-timer"></strong><ul id="hud-scores" aria-label="任務分數"></ul></div>
+ <div id="prop-panel" hidden><strong id="prop-count" aria-label="道具收集數"></strong><ul id="props" aria-label="道具收集進度"></ul></div>
+</div><section id="light-panel" hidden aria-label="燈光任務"><div id="light-rounds" aria-label="燈光三回合進度"></div><b id="light-hint"></b><div class="light-cards"></div></section><section id="audio-panel" hidden aria-label="法蘭奇，遙控器還來！"><div id="chase-progress" aria-label="三段追逐進度"></div><b id="audio-objective"></b><p id="chase-feedback" role="status" hidden></p><div id="speaker-states"></div></section></div><section id="layout-editor" hidden aria-labelledby="layout-heading">
 <h2 id="layout-heading">3D 舞台編輯器</h2>
 <p>點選畫面物件或用清單選取。拖曳彩色軸移動，拖曳空白處旋轉視角，右鍵拖曳平移，滾輪縮放。角色、踏板和平台沿 X／Y 移動，布景另可調整 Z。</p>
 <div class="layout-fields"><label>選取物件 <select id="layout-object"></select></label><label>X <input id="layout-x" type="number" step=".05"></label><label>Y <input id="layout-y" type="number" step=".05"></label><label>Z <input id="layout-z" type="number" step=".05"></label></div>
 <div class="layout-actions"><button id="layout-undo">復原</button><button id="layout-redo">重做</button><button id="layout-default">還原原始布局</button><button id="layout-export">匯出 JSON</button><label class="layout-import">匯入 JSON <input id="layout-import" type="file" accept=".json,application/json"></label><button id="layout-save">儲存布局</button><button id="layout-play">儲存並試玩</button></div>
-<p id="layout-message" role="status"></p></section><main id="game"><div id="light-countdown" role="status" aria-live="polite" hidden><div><span id="countdown-round"></span><strong id="countdown-number"></strong><small>先看示範，再依序踩踏板</small></div></div></main><button id="interaction" hidden></button><button id="video-prompt" hidden></button><dialog id="video-egg" aria-labelledby="video-title"><h2 id="video-title"></h2><button id="video-close" type="button">返回舞台（Esc）</button><iframe id="video-frame" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe><p><a id="video-source" target="_blank" rel="noopener noreferrer">在 Facebook 觀看</a></p></dialog><button id="remote-interaction" hidden>按 E 拿回遙控器</button><aside><b id="status">正在準備布丁貓…</b><details class="play-tools"><summary>操作與工具</summary><p>← →／A D 左右　·　↑ ↓／W S 前後（由兩側側台通往後台，燈光任務留在前台）　·　空白鍵跳躍（紫色平台可從下方跳上）　·　E 互動／確認　·　Esc 關閉對話　·　R 返回起點　·　Tab 切換按鈕，Enter 選取</p><button id="reset">返回起點</button> <a href="./viewer.html">素材檢視器</a> <a href="?edit=1">編輯舞台</a><p class="note">整場共 3 次失誤機會 · 自由探索不計時 · 對話及切換分頁暫停計時</p><ul id="missions" aria-label="任務入口狀態"></ul></details></aside>
+<p id="layout-message" role="status"></p></section><main id="game"><div id="light-countdown" role="status" aria-live="polite" hidden><div><span id="countdown-round"></span><strong id="countdown-number"></strong><small>先看示範，再依序踩踏板</small></div></div><div id="audio-countdown" role="status" aria-live="polite" hidden><div><span id="audio-countdown-title">糟了，法蘭奇把喇叭打開了！</span><strong id="audio-countdown-number" hidden></strong><small>音場一變黃，聲波就快來了！<br>橘紅聲波掃過時，跳起來躲開，或等音場變回青綠色再通過。</small></div></div></main><button id="interaction" hidden></button><button id="video-prompt" hidden></button><dialog id="video-egg" aria-labelledby="video-title"><h2 id="video-title"></h2><button id="video-close" type="button">返回舞台（Esc）</button><iframe id="video-frame" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe><p><a id="video-source" target="_blank" rel="noopener noreferrer">在 Facebook 觀看</a></p></dialog><button id="remote-interaction" hidden>按 E 拿回遙控器</button><aside><b id="status">正在準備布丁貓…</b><details class="play-tools"><summary>操作與工具</summary><p>← →／A D 左右　·　↑ ↓／W S 前後（由兩側側台通往後台，燈光任務留在前台）　·　空白鍵跳躍（紫色平台可從下方跳上）　·　E 互動／確認　·　Esc 關閉對話　·　R 返回起點　·　Tab 切換按鈕，Enter 選取</p><button id="reset">返回起點</button> <a href="./viewer.html">素材檢視器</a> <a href="?edit=1">編輯舞台</a><p class="note">整場共 3 次失誤機會 · 自由探索不計時 · 對話及切換分頁暫停計時</p><ul id="missions" aria-label="任務入口狀態"></ul></details></aside>
 <dialog id="opening" aria-labelledby="menu-title">
 <section id="opening-menu">
  <small>佳音小劇場 · 開演前大危機</small>
@@ -27,6 +31,7 @@
  <p id="story-cue"></p>
  <div class="story-actions"><button id="story-skip" type="button">略過故事</button><button id="story-next" type="button"><kbd>E</kbd> <span>接下來呢？</span></button></div>
 </section></dialog><dialog id="conversation" aria-labelledby="speaker">
+ <div class="conversation-card">
  <h2 id="speaker"></h2>
  <p id="speech"></p>
  <p id="task-summary" hidden></p>
@@ -35,4 +40,17 @@
   <button id="close-dialog" type="button"><kbd>Esc</kbd> 等一下</button>
   <button id="mission-action" type="button" hidden><kbd>E</kbd> <span></span></button>
  </div>
-</dialog><dialog id="result" aria-labelledby="result-title"><h2 id="result-title"></h2><p id="result-text"></p><p id="result-story" hidden></p><ul id="result-scores" hidden aria-label="任務分數"></ul><button id="result-close">繼續探索（E）</button><button id="restart-game" hidden>重新開始（R）</button></dialog><script type="module" src="/src/game.js"></script></body></html>
+ </div>
+</dialog><dialog id="result" aria-labelledby="result-title">
+ <h2 id="result-title"></h2>
+ <div class="result-body">
+  <div id="result-earned" hidden><span class="result-score-label">本項得分</span><div><strong id="result-points"></strong> 分</div><div class="result-breakdown"><span>基本分 <b id="result-base"></b></span><span>時間獎勵 <b id="result-bonus"></b></span></div></div>
+  <ul id="result-scores" hidden aria-label="任務分數"></ul>
+  <p id="result-total" hidden>總分 <strong></strong></p>
+  <p id="result-lives" hidden>剩餘機會 <span></span></p>
+  <p id="result-text"></p>
+  <div class="result-quote"><span id="result-speaker"></span><p id="result-story"></p></div>
+  <button id="result-close" type="button">繼續探索（E）</button>
+  <button id="restart-game" type="button" hidden>重新開始（R）</button>
+ </div>
+</dialog><script type="module" src="/src/game.js"></script></body></html>

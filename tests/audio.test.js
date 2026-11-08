@@ -1,17 +1,17 @@
 import {missionUi} from '../src/mission-ui.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {AudioMission,AUDIO_RULES,SPEAKERS,REMOTE,CONSOLE,CHASE,CHASE_STAGES,LEFT_BLAST_START,audioObjective} from '../src/audio-mission.js';
+import {AudioMission,AUDIO_RULES,SPEAKERS,SOUND_FIELD_ANGLE,REMOTE,CONSOLE,CHASE,CHASE_STAGES,LEFT_BLAST_START,audioObjective} from '../src/audio-mission.js';
 import {Mission,PROPS} from '../src/mission.js';
 import {completeLightTask} from './helpers/light-task.js';
 import {step} from '../src/physics.js';
 const consolePlayer={...CONSOLE,grounded:true};
 const atTarget=a=>({...a.target,grounded:true});
-function arrive(a){a.tick(a.reactionRemaining+a.routeLength/a.speed+.01);}
-function activate(a){arrive(a);assert.equal(a.interact(atTarget(a)),'escaped');}
+function arrive(a){a.tick(a.readyRemaining+a.reactionRemaining+a.routeLength/a.speed+.01);}
+function activate(a){arrive(a);assert.equal(a.interact(atTarget(a)),'escaped');a.tick(a.readyRemaining);}
 function finishChase(m){
  for(let i=0;i<3;i++){
-  m.tick(m.audio.reactionRemaining+m.audio.routeLength/m.audio.speed+.01);
+  m.tick(m.audio.readyRemaining+m.audio.reactionRemaining+m.audio.routeLength/m.audio.speed+.01);
   assert.equal(m.interactAudio(atTarget(m.audio)),i===2?'collected':'escaped');
  }
 }
@@ -25,12 +25,16 @@ test('speakers stay inactive until the first catch, then jumping clears a blast'
  const a=new AudioMission(),s=SPEAKERS[0],p={x:s.x,y:0,z:s.z};
  a.tick(20);assert.equal(a.speakersActive,false);assert.equal(a.hit(p),false);
  assert.equal(a.phase(s),'safe');assert.equal(a.interact(atTarget(a)),'escaped');
- assert.equal(a.waveElapsed,0);a.tick(LEFT_BLAST_START-.01);
+ assert.equal(a.waveElapsed,0);a.tick(a.readyRemaining+LEFT_BLAST_START-.01);
  assert.equal(a.phase(s),'warning');assert.equal(a.hit(p),false);
  a.tick(.02);assert.equal(a.phase(s),'blast');assert.equal(a.hit(p),true);
- assert.ok(a.frankieX>s.x+s.width/2);
+ assert.ok(a.frankieX>s.x+s.fieldWidth*Math.sin(SOUND_FIELD_ANGLE));
  assert.equal(a.hit({...p,x:a.position.x-(a.speed-4.2)*a.legElapsed}),true,'running directly behind Frankie reaches the blast');
  assert.equal(a.hit({...p,y:.8}),false);assert.equal(a.hit({...p,z:0}),false);assert.equal(a.hit(consolePlayer),false);
+ assert.equal(a.hit({...p,z:s.fieldZ-.1}),false,'the area behind the speaker is outside the fan');
+ assert.equal(a.hit({...p,x:s.x+s.fieldWidth*.75,z:s.fieldZ+.1}),false,'the area beside the mouth is outside the fan');
+ assert.equal(a.hit({...p,z:s.fieldZ+s.fieldDepth*.95}),true,'the center of the fan reaches its outer arc');
+ assert.equal(a.hit({...p,z:s.fieldZ+s.fieldDepth*1.05}),false,'the area beyond the arc is safe');
  a.tick(1.2);assert.equal(a.phase(s),'safe');
 });
 
@@ -40,7 +44,7 @@ test('three stops require separate grounded interactions before collecting the r
  for(let i=0;i<3;i++){
   const a=m.audio,p=atTarget(a);
   assert.equal(a.stage,i);assert.equal(m.interactAudio(p),null,'cannot catch a moving sign');
-  m.tick(a.reactionRemaining+a.routeLength/a.speed+.01);
+  m.tick(a.readyRemaining+a.reactionRemaining+a.routeLength/a.speed+.01);
   assert.equal(m.interactAudio({...p,grounded:false}),null);
   assert.equal(m.interactAudio({...p,y:p.y-1}),null);
   assert.equal(m.interactAudio({...p,z:0}),null);
@@ -113,6 +117,7 @@ test('real movement completes three catches on both floors and returns within th
  function catchFrankie(expected){
   for(let i=0;i<1800&&!m.audio.waiting;i++)advance(0,false);
   assert.equal(m.interactAudio(p),expected);
+  m.tick(m.audio.readyRemaining);
  }
  x(12.5);z(-8);x(-3.5);z(-6);catchFrankie('escaped');
  z(-8);
@@ -129,7 +134,7 @@ test('Frankie waits at each stop and reacts before escaping along the upper rout
  const a=new AudioMission();a.tick(.5);assert.ok(a.frankieX>CONSOLE.x);assert.equal(a.waiting,false);
  a.tick(100);assert.equal(a.stage,0);assert.equal(a.waiting,true);assert.deepEqual(a.position,a.target);
  const first={...a.position};assert.equal(a.interact(atTarget(a)),'escaped');
- assert.deepEqual(a.position,first);a.tick(.1);assert.ok(a.frankieX>first.x);
+ assert.deepEqual(a.position,first);a.tick(a.readyRemaining+.1);assert.ok(a.frankieX>first.x);
  arrive(a);assert.equal(a.interact(atTarget(a)),'escaped');
  a.tick(CHASE.reaction+2);assert.ok(a.frankieX<14.5);assert.ok(a.frankieY>0);
  arrive(a);assert.equal(a.atEnd,true);assert.equal(a.frankieY,4.4);assert.equal(a.stage,2);
@@ -153,8 +158,8 @@ test('objectives explain each new target and intermediate catches award no score
  const m=new Mission();m.start('audio');
  for(let i=0;i<3;i++){
   assert.ok(audioObjective(m.audio).includes(`追逐 ${i+1} / 3`));
-  assert.ok(audioObjective(m.audio).includes(CHASE_STAGES[i].place));
-  m.tick(m.audio.reactionRemaining+m.audio.routeLength/m.audio.speed+.01);
+  assert.ok(!audioObjective(m.audio).includes(CHASE_STAGES[i].place));
+  m.tick(m.audio.readyRemaining+m.audio.reactionRemaining+m.audio.routeLength/m.audio.speed+.01);
   m.interactAudio(atTarget(m.audio));assert.notEqual(m.audio.feedback,'');assert.equal(m.score,0);
  }
  assert.match(audioObjective(m.audio),/回音控台/);
@@ -166,7 +171,7 @@ test('retry from any chase stage begins at the first stop with fresh warnings',(
  for(let completed=0;completed<3;completed++){
   const m=new Mission();m.start('audio');
   for(let i=0;i<completed;i++){
-   m.tick(m.audio.reactionRemaining+m.audio.routeLength/m.audio.speed+.01);
+   m.tick(m.audio.readyRemaining+m.audio.reactionRemaining+m.audio.routeLength/m.audio.speed+.01);
    m.interactAudio(atTarget(m.audio));
   }
   assert.equal(m.audio.stage,completed);assert.equal(m.fail('返回起點').kind,'failure');

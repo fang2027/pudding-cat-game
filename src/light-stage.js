@@ -5,7 +5,7 @@ export function setupLightStage(scene){
  const panel=document.querySelector('#light-panel'),hint=document.querySelector('#light-hint');
  const countdown=document.querySelector('#light-countdown');
  hint.setAttribute('role','status');
- const rounds=LIGHT_ROUNDS.map((r,i)=>{const card=document.createElement('span');card.textContent=`${i+1}. ${r.name} · ${r.length} 次`;document.querySelector('#light-rounds').append(card);return card;});
+ const rounds=LIGHT_ROUNDS.map((r,i)=>{const card=document.createElement('span');card.textContent=`${i+1}`;document.querySelector('#light-rounds').append(card);return card;});
  const cards=PADS.map(p=>{
   const card=document.createElement('span');card.textContent=p.name;card.style.setProperty('--pad-color','#'+p.color.toString(16));panel.querySelector('.light-cards').append(card);return card;
  });
@@ -19,10 +19,38 @@ export function setupLightStage(scene){
   const ctx=canvas.getContext('2d');ctx.fillStyle='#302c45';ctx.font='bold 88px sans-serif';ctx.textAlign='center';ctx.fillText(p.id,64,98);
   const label=new THREE.Mesh(new THREE.PlaneGeometry(.6,.6),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,side:THREE.DoubleSide}));
   label.rotation.x=-Math.PI/2;label.position.set(p.x,p.y+.08,.3);group.add(label);
-  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),material);lamp.position.set(p.x,p.y+([3.5,2.8,2.2][index]),-1.3);group.add(lamp);
+  const fixture=new THREE.Group();
+  fixture.position.set(p.x,p.y+.08,0);
+  group.add(fixture);
+  const height=[3.5,2.8,2.2][index];
+  const radius=.74;
+  const spotlight=new THREE.SpotLight(p.color,0,height+2,Math.atan(radius/height),.5,1.5);
+  spotlight.position.y=height;
+  fixture.add(spotlight,spotlight.target);
+
+  // Draw the light shaft separately so it reads in the theatre's clear air.
+  const beam=new THREE.Mesh(
+   new THREE.CylinderGeometry(.065,radius,height,32,1,true),
+   new THREE.ShaderMaterial({
+    uniforms:{color:{value:new THREE.Color(p.color)},strength:{value:0}},
+    vertexShader:'varying vec2 beamUv; void main(){beamUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:'varying vec2 beamUv; uniform vec3 color; uniform float strength; void main(){float fade=smoothstep(0.0,0.2,beamUv.y)*(0.6+0.4*beamUv.y); gl_FragColor=vec4(color,fade*strength);}',
+    transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending
+   })
+  );
+  beam.position.y=height/2;
+  beam.visible=false;
+  fixture.add(beam);
+  const pool=new THREE.Mesh(new THREE.CircleGeometry(radius,32),new THREE.MeshBasicMaterial({
+   color:p.color,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending
+  }));
+  pool.rotation.x=-Math.PI/2;
+  pool.position.y=.004;
+  pool.visible=false;
+  fixture.add(pool);
   const ring=new THREE.Mesh(new THREE.RingGeometry(.43,.57,32),new THREE.MeshBasicMaterial({color:p.color,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
   ring.rotation.x=-Math.PI/2;ring.position.set(p.x,p.y+.09,0);group.add(ring);
-  return {group,material,pad,ring};
+  return {group,material,pad,ring,spotlight,beam,pool};
  });
  const glow=new THREE.PointLight(0xffe5bb,0,18);glow.position.set(PADS[1].x,6,2);scene.add(glow);
  return (m,player,behind=false)=>{
@@ -46,6 +74,12 @@ export function setupLightStage(scene){
    const pressed=!demo&&underfoot?.id===p.id;
    const correct=feedback?.padId===p.id&&feedback.result==='correct';
    const lit=demo?m.lights.litPad===p.id:pressed||correct;
+   const {spotlight,beam,pool}=lamps[i];
+   const strength=!behind?(lit?1:complete?.36:0):0;
+   spotlight.intensity=30*strength;
+   beam.visible=pool.visible=strength>0;
+   beam.material.uniforms.strength.value=.22*strength;
+   pool.material.opacity=.36*strength;
    lamps[i].material.emissiveIntensity=lit?2.5:complete?.7:.04;
    lamps[i].pad.position.y=p.y+(pressed?.02:.035);
    lamps[i].ring.material.opacity=correct?.8:pressed?.45:0;

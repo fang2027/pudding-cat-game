@@ -79,18 +79,22 @@ async function trajectory({start, jumpOnFirst = true, moveSteps = 40, frames = 1
     const pose = motion.update(dt, state); animation.update(dt, state);
     assert.deepEqual([...model.position, ...model.quaternion, ...model.scale], placement);
     const footHeights = footNames.map((n, k) => point(model, n).y - feet[k].y);
+    const frontForward = [0, 2].map(k => body.worldToLocal(bone(model, footNames[k]).getWorldPosition(new THREE.Vector3())).z - feet[k].z);
     const hindBack = [1, 3].map(k => body.worldToLocal(bone(model, footNames[k]).getWorldPosition(new THREE.Vector3())).z - feet[k].z);
     record.push({player: {...player}, pose, footHeights, bodyY: body.position.y,
-      hindBack, pitch: new THREE.Euler().setFromQuaternion(body.quaternion).x});
+      frontForward, hindBack, pitch: new THREE.Euler().setFromQuaternion(body.quaternion).x});
   }
   return {model, animation, record};
 }
 
-test('actual low-platform jump pitches along the arc, tucks forefeet, stretches hind legs back, cushions and recovers', async () => {
+test('actual low-platform jump reaches both forefeet forward, stretches hind legs back, cushions and recovers', async () => {
   const {record} = await trajectory({start: {x: -.3, y: 0}, moveSteps: 40});
   assert(record.some(r => r.pose.phase === 'rising' && r.pitch < -.20));
   const apex = record.find(r => r.pose.phase === 'apex'); assert(apex);
   assert([0, 2].every(i => apex.footHeights[i] > .10), 'Forefeet should tuck above their standing height');
+  assert(record.some(r => r.pose.phase === 'rising' && r.frontForward.every(z => z > .20)));
+  assert(apex.frontForward.every(z => z > .35), 'Both forefeet should reach forward relative to the torso at the apex');
+  assert(record.some(r => r.pose.phase === 'falling' && r.frontForward.every(z => z > .15)));
   assert(apex.hindBack.every(z => z < -.40), 'Both hind paws must trail behind the torso rather than tuck underneath');
   assert(record.some(r => r.pose.phase === 'falling' && r.pitch > .20 && r.hindBack.every(z => z < -.25)));
   const land = record.findIndex(r => r.pose.phase === 'landing'); assert(land > 0);

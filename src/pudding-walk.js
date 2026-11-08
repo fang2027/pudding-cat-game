@@ -143,7 +143,7 @@ export function createPuddingWalk(model,{idle=false,sitSettings=SIT_DEFAULTS}={}
     if (air.airborne) {
       if (leg.front) {
         target.y += height * .12 * air.tuck;
-        target.z += height * (.045 * air.tuck + .035 * air.reach - .02 * air.launch);
+        target.z += height * (.38 * air.tuck + .12 * air.reach - .02 * air.launch);
       } else {
         target.y += height * (.075 * air.hindStretch + .045 * air.tuck);
         target.z -= height * .27 * air.hindStretch;

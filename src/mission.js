@@ -30,7 +30,10 @@ export class Mission {
  }
  tick(dt){
   if(!this.activeId)return null;
-  dt=Math.max(0,dt);const record=this.records[this.activeId];record.remaining=Math.max(0,record.remaining-dt);
+  dt=Math.max(0,dt);
+  const record=this.records[this.activeId];
+  const timedDt=this.activeId==='audio'?Math.max(0,dt-this.audio.readyRemaining):dt;
+  record.remaining=Math.max(0,record.remaining-timedDt);
   if(record.remaining===0)return this.fail('時間到了');
   if(this.activeId==='lights')this.lights.tick(dt);
   if(this.activeId==='audio')this.audio.tick(dt);

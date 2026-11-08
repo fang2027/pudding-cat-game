@@ -66,6 +66,19 @@ test('actual run moves the four paws and weighted skin without drifting its root
   assert(changed); assert.deepEqual(mesh.geometry.attributes.position.array, original);
 });
 
+test('animated paw soles stay on the route surface through the run loop',async()=>{
+ const runner=createFrankieRun(await loadFrankie());
+ const carrier=new THREE.Group();
+ carrier.add(runner.object);
+ for(let i=0;i<96;i++){
+  carrier.position.set(i*.15,2+Math.sin(i*.12),-6+i*.03);
+  runner.update(.05,{moving:true});
+  if(i%4!==0)continue;
+  const feet=new THREE.Box3().setFromObject(runner.object,true).min.y;
+  assert.ok(Math.abs(feet-carrier.position.y)<.006, 'lowest skinned vertex follows the floor');
+ }
+});
+
 test('Frankie pauses, stops into idle, turns, resets and leaves external route placement untouched', async () => {
   const gltf = await loadFrankie(), runner = createFrankieRun(gltf), object = runner.object;
   const idle = snapshot(object); object.position.set(7, 2, -.15);
@@ -86,7 +99,7 @@ test('Frankie pauses, stops into idle, turns, resets and leaves external route p
 test('real dog replaces the chase pole, follows both floors, freezes during dialogue and resets on failure', async () => {
   const gltf = await loadFrankie();
   const element = () => ({textContent: '', hidden: false, children: [], dataset: {},
-    append(child) {this.children.push(child);}, getContext() {return {fillRect() {}, fillText() {}};}});
+    append(child) {this.children.push(child);}, setAttribute(){}, getContext() {return {fillRect() {}, fillText() {}};}});
   const nodes = Object.fromEntries(['audio-panel','speaker-states','chase-progress','chase-feedback','audio-objective'].map(id => ['#' + id, element()]));
   const previous = globalThis.document;
   globalThis.document = {querySelector: selector => nodes[selector], createElement: element};
@@ -102,13 +115,13 @@ test('real dog replaces the chase pole, follows both floors, freezes during dial
     for (let i = 0; i < 120; i++) update(m, player, {dt, paused: true});
     assert.deepEqual(snapshot(model), pose); assert.equal(chase.position.x, x);
     for (let stage = 0; stage < 3; stage++) {
-      m.tick(m.audio.reactionRemaining + m.audio.routeLength / m.audio.speed + .01); update(m, player, {dt});
+      m.tick(m.audio.readyRemaining + m.audio.reactionRemaining + m.audio.routeLength / m.audio.speed + .01); update(m, player, {dt});
       assert.equal(chase.position.x, m.audio.target.x); assert.equal(chase.position.y, m.audio.target.y);
       for (let i = 0; i < 120; i++) update(m, player, {dt});
       const still = snapshot(model); update(m, player, {dt}); assert.deepEqual(snapshot(model), still);
       const target = {...m.audio.target, grounded: true}; m.interactAudio(target); update(m, target, {dt});
       if (stage < 2) {
-        m.tick(m.audio.reactionRemaining + .1); update(m, target, {dt});
+        m.tick(m.audio.readyRemaining + m.audio.reactionRemaining + .1); update(m, target, {dt});
         assert.equal(model.rotation.y, stage === 0 ? Math.PI / 2 : -Math.PI / 2);
       }
     }
